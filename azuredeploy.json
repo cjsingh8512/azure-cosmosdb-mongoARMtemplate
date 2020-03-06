@@ -130,7 +130,7 @@
     },
     "_artifactsLocation": {
       "type": "string",
-      "defaultValue": "https://testcjdatafactory.blob.core.windows.net/armtemplate/",
+      "defaultValue": "https://raw.githubusercontent.com/cjsingh8512/azure-cosmosdb-mongoARMtemplate/master/",
       "metadata": {
         "description": "The base URI where artifacts required by this template are located. When the template is deployed using the accompanying scripts, a private location in the subscription will be used and this value will be automatically generated."
       }
@@ -140,7 +140,7 @@
       "metadata": {
         "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated."
       },
-      "defaultValue": "?st=2020-03-05T17%3A52%3A00Z&se=2020-03-06T17%3A52%3A00Z&sp=rwl&sv=2015-12-11&sr=c&sig=3tkFhCkodJvduKaGRILbY1y%2FnuT0jzKBhDHtq98CSSg%3D"
+      "defaultValue": ""
     },
     "_artifactsChinaLocation": {
       "type": "string",
