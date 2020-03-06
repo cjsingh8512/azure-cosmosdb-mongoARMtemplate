@@ -2,22 +2,18 @@
 
 mongoAdminUser=$1
 mongoAdminPasswd=$2
+certUri=$3
 
 install_mongo3() {
-#create repo
-cat > /etc/yum.repos.d/mongodb-org-3.2.repo <<EOF
-[mongodb-org-3.2]
-name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/3.2/x86_64/
-gpgcheck=0
-enabled=1
-EOF
 
 	#install
-	yum install -y mongodb-org
-
-	#ignore update
-	sed -i '$a exclude=mongodb-org,mongodb-org-server,mongodb-org-shell,mongodb-org-mongos,mongodb-org-tools' /etc/yum.conf
+	wget https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.6/x86_64/RPMS/mongodb-org-mongos-3.6.17-1.el7.x86_64.rpm
+	wget https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.6/x86_64/RPMS/mongodb-org-shell-3.6.17-1.el7.x86_64.rpm
+	wget https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.6/x86_64/RPMS/mongodb-org-server-3.6.17-1.el7.x86_64.rpm
+	rpm -i mongodb-org-mongos-3.6.17-1.el7.x86_64.rpm
+	rpm -i mongodb-org-shell-3.6.17-1.el7.x86_64.rpm
+	rpm -i mongodb-org-server-3.6.17-1.el7.x86_64.rpm
+	PATH=$PATH:/usr/bin; export PATH
 
 	#disable selinux
 	sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux
@@ -44,12 +40,14 @@ EOF
 	sed -i 's/^keyFile/  keyFile/' /etc/mongod.conf
 }
 
+yum install wget -y
+echo "Downloading the ssl cert"
+wget $certUri -O /etc/MongoAuthCert.pem
 
 install_mongo3
 
-
 #start router server
-mongos --configdb crepset/10.0.0.240:27019,10.0.0.241:27019,10.0.0.242:27019 --port 27017 --logpath /var/log/mongodb/mongos.log --fork --keyFile /etc/mongokeyfile
+mongos --configdb crepset/10.0.0.240:27019,10.0.0.241:27019,10.0.0.242:27019 --bind_ip 0.0.0.0 --port 27017 --logpath /var/log/mongodb/mongos.log --fork --keyFile /etc/mongokeyfile --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 
 
 #check router server starts or not
@@ -61,7 +59,7 @@ do
 		echo "mongos started successfully"
 		break
 	else
-		mongos --configdb crepset/10.0.0.240:27019,10.0.0.241:27019,10.0.0.242:27019 --port 27017 --logpath /var/log/mongodb/mongos.log --fork --keyFile /etc/mongokeyfile
+		mongos --configdb crepset/10.0.0.240:27019,10.0.0.241:27019,10.0.0.242:27019 --bind_ip 0.0.0.0 --port 27017 --logpath /var/log/mongodb/mongos.log --fork --keyFile /etc/mongokeyfile --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 		continue
 	fi
 done
@@ -71,8 +69,8 @@ if [[ $n -ne 1 ]];then
 echo "mongos tried to start 3 times but failed!"
 fi
 
-#add shard
-mongo --port 27017 <<EOF
+add shard
+mongo --ssl --sslCAFile /etc/MongoAuthCert.pem --sslAllowInvalidHostnames --port 27017 <<EOF
 use admin
 db.auth("$mongoAdminUser","$mongoAdminPasswd")
 sh.addShard("repset1/10.0.0.100:27017")
@@ -99,7 +97,7 @@ if [[ ! -d /var/run/mongodb ]];then
 mkdir /var/run/mongodb
 chown -R mongod:mongod /var/run/mongodb
 fi
-mongos --configdb crepset/10.0.0.240:27019,10.0.0.241:27019,10.0.0.242:27019 --port 27017 --logpath /var/log/mongodb/mongos.log --fork --keyFile /etc/mongokeyfile
+mongos --configdb crepset/10.0.0.240:27019,10.0.0.241:27019,10.0.0.242:27019 --bind_ip 0.0.0.0 --port 27017 --logpath /var/log/mongodb/mongos.log --fork --keyFile /etc/mongokeyfile --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 }
 stop() {
 pkill mongod

@@ -140,7 +140,7 @@
       "metadata": {
         "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated."
       },
-      "defaultValue": "?st=2020-02-12T19%3A00%3A00Z&se=2020-02-13T19%3A50%3A00Z&sp=rwl&sv=2015-12-11&sr=c&sig=c%2BmoR62CdZY3%2BfZ8ZTlLnT5SQD%2F97JunYuNXATkrSKU%3D"
+      "defaultValue": "?st=2020-03-05T17%3A52%3A00Z&se=2020-03-06T17%3A52%3A00Z&sp=rwl&sv=2015-12-11&sr=c&sig=3tkFhCkodJvduKaGRILbY1y%2FnuT0jzKBhDHtq98CSSg%3D"
     },
     "_artifactsChinaLocation": {
       "type": "string",
@@ -166,7 +166,8 @@
       "configSecondaryNodeScript": "[uri(parameters('_artifactsLocation'), concat('scripts/config_secondary.sh', parameters('_artifactsLocationSasToken')))]",
       "routerNodeScript": "[uri(parameters('_artifactsLocation'), concat('scripts/router.sh', parameters('_artifactsLocationSasToken')))]",
       "replicaPrimaryNodeScript": "[uri(parameters('_artifactsLocation'), concat('scripts/replica_primary.sh', parameters('_artifactsLocationSasToken')))]",
-      "replicaSecondaryNodeScript": "[uri(parameters('_artifactsLocation'), concat('scripts/replica_secondary.sh', parameters('_artifactsLocationSasToken')))]"
+      "replicaSecondaryNodeScript": "[uri(parameters('_artifactsLocation'), concat('scripts/replica_secondary.sh', parameters('_artifactsLocationSasToken')))]",
+      "certificateLocation": "[uri(parameters('_artifactsLocation'), concat('scripts/MongoAuthCert.pem', parameters('_artifactsLocationSasToken')))]"
     },
     "environmentAzureChinaCloud": {
       "serviceEndPoint": "core.chinacloudapi.cn",
@@ -176,7 +177,8 @@
       "configSecondaryNodeScript": "[uri(parameters('_artifactsChinaLocation'), concat('scripts/config_secondary.sh', parameters('_artifactsChinaLocationSasToken')))]",
       "routerNodeScript": "[uri(parameters('_artifactsChinaLocation'), concat('scripts/router.sh', parameters('_artifactsChinaLocationSasToken')))]",
       "replicaPrimaryNodeScript": "[uri(parameters('_artifactsChinaLocation'), concat('scripts/replica_primary.sh', parameters('_artifactsChinaLocationSasToken')))]",
-      "replicaSecondaryNodeScript": "[uri(parameters('_artifactsChinaLocation'), concat('scripts/replica_secondary.sh', parameters('_artifactsChinaLocationSasToken')))]"
+      "replicaSecondaryNodeScript": "[uri(parameters('_artifactsChinaLocation'), concat('scripts/replica_secondary.sh', parameters('_artifactsChinaLocationSasToken')))]",
+      "certificateLocation": "[uri(parameters('_artifactsLocation'), concat('scripts/MongoAuthCert.pem', parameters('_artifactsLocationSasToken')))]"
     },
     "environment": "[variables(concat('environment', parameters('environment')))]",
     "templateBaseUrl": "[variables('environment').artifactsLocation]",
@@ -219,7 +221,8 @@
       },
       "scripts": [
         "[variables('environment').configPrimaryNodeScript]"
-      ]
+      ],
+      "certificates": "[variables('environment').certificateLocation]"
     },
     "configSecondaryOsSettings": {
       "imageReference": {
@@ -230,7 +233,8 @@
       },
       "scripts": [
         "[variables('environment').configSecondaryNodeScript]"
-      ]
+      ],
+      "certificates": "[variables('environment').certificateLocation]"
     },
     "routerOsSettings": {
       "imageReference": {
@@ -241,7 +245,8 @@
       },
       "scripts": [
         "[variables('environment').routerNodeScript]"
-      ]
+      ],
+      "certificates": "[variables('environment').certificateLocation]"
     },
     "replicaPrimaryOsSettings": {
       "imageReference": {
@@ -252,7 +257,8 @@
       },
       "scripts": [
         "[variables('environment').replicaPrimaryNodeScript]"
-      ]
+      ],
+      "certificates": "[variables('environment').certificateLocation]"
     },
     "replicaSecondaryOsSettings": {
       "imageReference": {
@@ -263,7 +269,8 @@
       },
       "scripts": [
         "[variables('environment').replicaSecondaryNodeScript]"
-      ]
+      ],
+      "certificates": "[variables('environment').certificateLocation]"
     }
   },
   "resources": [
@@ -750,6 +757,12 @@
           },
           "adminPasswordOrKey": {
             "value": "[parameters('adminPasswordOrKey')]"
+          },
+          "_artifactsLocationSasToken": {
+            "value": "[variables('environment').artifactsLocationSasToken]"
+          },
+          "_artifactsLocation": {
+            "value": "[variables('environment').artifactsLocation]"
           }
         }
       }

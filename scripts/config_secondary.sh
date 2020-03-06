@@ -1,20 +1,14 @@
 #!/bin/bash
 
+certUri=$1
+
 install_mongo3() {
-#create repo
-cat > /etc/yum.repos.d/mongodb-org-3.2.repo <<EOF
-[mongodb-org-3.2]
-name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/3.2/x86_64/
-gpgcheck=0
-enabled=1
-EOF
-
 	#install
-	yum install -y mongodb-org
-
-	#ignore update
-	sed -i '$a exclude=mongodb-org,mongodb-org-server,mongodb-org-shell,mongodb-org-mongos,mongodb-org-tools' /etc/yum.conf
+	wget https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.6/x86_64/RPMS/mongodb-org-server-3.6.17-1.el7.x86_64.rpm
+	wget https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.6/x86_64/RPMS/mongodb-org-shell-3.6.17-1.el7.x86_64.rpm
+	rpm -i mongodb-org-server-3.6.17-1.el7.x86_64.rpm
+	rpm -i mongodb-org-shell-3.6.17-1.el7.x86_64.rpm
+	PATH=$PATH:/usr/bin; export PATH
 
 	#disable selinux
 	sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux
@@ -41,13 +35,13 @@ EOF
 	sed -i 's/^keyFile/  keyFile/' /etc/mongod.conf
 }
 
-
+yum install wget -y
+echo "Downloading the ssl cert"
+wget $certUri -O /etc/MongoAuthCert.pem
 install_mongo3
 
 #start config replica set
-mongod --configsvr --replSet crepset --port 27019 --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/config.log --fork --config /etc/mongod.conf
-
-
+mongod --configsvr --replSet crepset --bind_ip 0.0.0.0 --port 27019 --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/config.log --fork --config /etc/mongod.conf --keyFile /etc/mongokeyfile --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 
 
 #check if mongod started or not
@@ -73,7 +67,7 @@ if [[ ! -d /var/run/mongodb ]];then
 mkdir /var/run/mongodb
 chown -R mongod:mongod /var/run/mongodb
 fi
-mongod --configsvr --replSet crepset --port 27019 --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/config.log --fork --config /etc/mongod.conf
+mongod --configsvr --replSet crepset --bind_ip 0.0.0.0 --port 27019 --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/config.log --fork --config /etc/mongod.conf --keyFile /etc/mongokeyfile --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 }
 stop() {
 pkill mongod

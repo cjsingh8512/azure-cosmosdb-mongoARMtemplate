@@ -4,22 +4,16 @@ replSetName=$1
 staticIP=$2
 mongoAdminUser=$3
 mongoAdminPasswd=$4
+certUri=$5
 
 install_mongo3() {
-#create repo
-cat > /etc/yum.repos.d/mongodb-org-3.2.repo <<EOF
-[mongodb-org-3.2]
-name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/3.2/x86_64/
-gpgcheck=0
-enabled=1
-EOF
 
 	#install
-	yum install -y mongodb-org
-
-	#ignore update
-	sed -i '$a exclude=mongodb-org,mongodb-org-server,mongodb-org-shell,mongodb-org-mongos,mongodb-org-tools' /etc/yum.conf
+	wget https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.6/x86_64/RPMS/mongodb-org-server-3.6.17-1.el7.x86_64.rpm
+	wget https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.6/x86_64/RPMS/mongodb-org-shell-3.6.17-1.el7.x86_64.rpm
+	rpm -i mongodb-org-server-3.6.17-1.el7.x86_64.rpm
+	rpm -i mongodb-org-shell-3.6.17-1.el7.x86_64.rpm
+	PATH=$PATH:/usr/bin; export PATH
 
 	#disable selinux
 	sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux
@@ -36,12 +30,19 @@ EOF
 
 	#configure
 	sed -i 's/\(bindIp\)/#\1/' /etc/mongod.conf
+
+	#set keyfile
+	echo "vfr4CDE1" > /etc/mongokeyfile
+	chown mongod:mongod /etc/mongokeyfile
+	chmod 600 /etc/mongokeyfile
+	sed -i 's/^#security/security/' /etc/mongod.conf
+	sed -i '/^security/akeyFile: /etc/mongokeyfile' /etc/mongod.conf
+	sed -i 's/^keyFile/  keyFile/' /etc/mongod.conf
 }
 
 
 disk_format() {
 	cd /tmp
-	yum install wget -y
 	for ((j=1;j<=3;j++))
 	do
 		wget https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/shared_scripts/ubuntu/vm-disk-utils-0.1.sh
@@ -61,11 +62,15 @@ disk_format() {
 
 }
 
+yum install wget -y
+echo "Downloading the ssl cert"
+wget $certUri -O /etc/MongoAuthCert.pem
+
 install_mongo3
 disk_format
 
 #start mongod
-mongod --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/mongod.log --fork
+mongod --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 
 sleep 30
 n=`ps -ef |grep "mongod --dbpath /var/lib/mongo/" |grep -v grep |wc -l`
@@ -76,9 +81,8 @@ else
 fi
 
 
-
 #create users
-mongo <<EOF
+mongo --ssl --sslCAFile /etc/MongoAuthCert.pem --sslAllowInvalidHostnames<<EOF
 use admin
 db.createUser({user:"$mongoAdminUser",pwd:"$mongoAdminPasswd",roles:[{role: "userAdminAnyDatabase", db: "admin" },{role: "readWriteAnyDatabase", db: "admin" },{role: "root", db: "admin" }]})
 exit
@@ -96,13 +100,13 @@ kill -2 $MongoPid
 
 
 
-#set keyfile
-echo "vfr4CDE1" > /etc/mongokeyfile
-chown mongod:mongod /etc/mongokeyfile
-chmod 600 /etc/mongokeyfile
-sed -i 's/^#security/security/' /etc/mongod.conf
-sed -i '/^security/akeyFile: /etc/mongokeyfile' /etc/mongod.conf
-sed -i 's/^keyFile/  keyFile/' /etc/mongod.conf
+# #set keyfile
+# echo "vfr4CDE1" > /etc/mongokeyfile
+# chown mongod:mongod /etc/mongokeyfile
+# chmod 600 /etc/mongokeyfile
+# sed -i 's/^#security/security/' /etc/mongod.conf
+# sed -i '/^security/akeyFile: /etc/mongokeyfile' /etc/mongod.conf
+# sed -i 's/^keyFile/  keyFile/' /etc/mongod.conf
 
 sleep 15
 MongoPid1=`ps -ef |grep "mongod --dbpath /var/lib/mongo/" |grep -v grep |awk '{print $2}'`
@@ -115,10 +119,7 @@ else
 fi
 
 #restart mongod with auth and replica set
-mongod --dbpath /var/lib/mongo/ --replSet $replSetName --logpath /var/log/mongodb/mongod.log --fork --config /etc/mongod.conf
-
-
-
+mongod --dbpath /var/lib/mongo/ --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --config /etc/mongod.conf --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 
 
 #initiate replica set
@@ -130,7 +131,7 @@ do
 		echo "mongo replica set started successfully"
 		break
 	else
-		mongod --dbpath /var/lib/mongo/ --replSet $replSetName --logpath /var/log/mongodb/mongod.log --fork --config /etc/mongod.conf
+		mongod --dbpath /var/lib/mongo/ --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --config /etc/mongod.conf --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 		continue
 	fi
 done
@@ -142,7 +143,7 @@ fi
 
 
 
-mongo<<EOF
+mongo --ssl --sslCAFile /etc/MongoAuthCert.pem --sslAllowInvalidHostnames<<EOF
 use admin
 db.auth("$mongoAdminUser", "$mongoAdminPasswd")
 config ={_id:"$replSetName",members:[{_id:0,host:"$staticIP:27017"}]}
@@ -165,18 +166,16 @@ elif [[ $num -eq 110 ]];then
 fi
 
 #add secondary nodes
-for((i=1;i<=2;i++))
+for((i=1;i<=3;i++))
 do
 	let a=$i+$g
-	mongo -u "$mongoAdminUser" -p "$mongoAdminPasswd" "admin" --eval "printjson(rs.add('10.0.0.${a}:27017'))"
+	mongo -u "$mongoAdminUser" -p "$mongoAdminPasswd" "admin" --ssl --sslCAFile /etc/MongoAuthCert.pem --sslAllowInvalidHostnames --eval "printjson(rs.add('10.0.0.${a}:27017'))"
 	if [[ $? -eq 0 ]];then
 		echo "adding server 10.0.0.${a} successfully"
 	else
 		echo "adding server 10.0.0.${a} failed!"
 	fi
 done
-
-
 
 
 #set mongod auto start
@@ -192,7 +191,7 @@ if [[ ! -d /var/run/mongodb ]];then
 mkdir /var/run/mongodb
 chown -R mongod:mongod /var/run/mongodb
 fi
-mongod --dbpath /var/lib/mongo/ --replSet $replSetName --logpath /var/log/mongodb/mongod.log --fork --config /etc/mongod.conf
+mongod --dbpath /var/lib/mongo/ --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --config /etc/mongod.conf --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 }
 stop() {
 pkill mongod

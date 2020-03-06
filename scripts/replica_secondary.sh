@@ -1,22 +1,16 @@
 #!/bin/bash
 
 replSetName=$1
+certUri=$2
 
 install_mongo3() {
-#create repo
-cat > /etc/yum.repos.d/mongodb-org-3.2.repo <<EOF
-[mongodb-org-3.2]
-name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/3.2/x86_64/
-gpgcheck=0
-enabled=1
-EOF
 
 	#install
-	yum install -y mongodb-org
-
-	#ignore update
-	sed -i '$a exclude=mongodb-org,mongodb-org-server,mongodb-org-shell,mongodb-org-mongos,mongodb-org-tools' /etc/yum.conf
+	wget https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.6/x86_64/RPMS/mongodb-org-server-3.6.17-1.el7.x86_64.rpm
+	wget https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.6/x86_64/RPMS/mongodb-org-shell-3.6.17-1.el7.x86_64.rpm
+	rpm -i mongodb-org-server-3.6.17-1.el7.x86_64.rpm
+	rpm -i mongodb-org-shell-3.6.17-1.el7.x86_64.rpm
+	PATH=$PATH:/usr/bin; export PATH
 
 	#disable selinux
 	sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux
@@ -45,7 +39,6 @@ EOF
 
 disk_format() {
 	cd /tmp
-	yum install wget -y
 	for ((j=1;j<=3;j++))
 	do
 		wget https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/shared_scripts/ubuntu/vm-disk-utils-0.1.sh
@@ -65,12 +58,15 @@ disk_format() {
 
 }
 
+yum install wget -y
+echo "Downloading the ssl cert"
+wget $certUri -O /etc/MongoAuthCert.pem
 
 install_mongo3
 disk_format
 
 #start replica set
-mongod --dbpath /var/lib/mongo/ --config /etc/mongod.conf --replSet $replSetName --logpath /var/log/mongodb/mongod.log --fork
+mongod --dbpath /var/lib/mongo/ --config /etc/mongod.conf --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 
 
 #check if mongod started or not
@@ -96,7 +92,7 @@ if [[ ! -d /var/run/mongodb ]];then
 mkdir /var/run/mongodb
 chown -R mongod:mongod /var/run/mongodb
 fi
-mongod --dbpath /var/lib/mongo/ --replSet $replSetName --logpath /var/log/mongodb/mongod.log --fork --config /etc/mongod.conf
+mongod --dbpath /var/lib/mongo/ --config /etc/mongod.conf --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 }
 stop() {
 pkill mongod

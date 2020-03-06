@@ -167,7 +167,7 @@
           "fileUris": "[parameters('osSettings').scripts]"
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('bash replica_secondary.sh ', parameters('replSetName'))]"
+          "commandToExecute": "[concat('bash replica_secondary.sh ', parameters('replSetName'), ' ', parameters('osSettings').certificates)]"
         }
       }
     }

@@ -2,22 +2,15 @@
 
 mongoAdminUser=$1
 mongoAdminPasswd=$2
+certUri=$3
 
 install_mongo3() {
-#create repo
-cat > /etc/yum.repos.d/mongodb-org-3.2.repo <<EOF
-[mongodb-org-3.2]
-name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/3.2/x86_64/
-gpgcheck=0
-enabled=1
-EOF
-
-	#install
-	yum install -y mongodb-org
-
-	#ignore update
-	sed -i '$a exclude=mongodb-org,mongodb-org-server,mongodb-org-shell,mongodb-org-mongos,mongodb-org-tools' /etc/yum.conf
+    #install
+	wget https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.6/x86_64/RPMS/mongodb-org-server-3.6.17-1.el7.x86_64.rpm
+	wget https://repo.mongodb.org/yum/redhat/7/mongodb-org/3.6/x86_64/RPMS/mongodb-org-shell-3.6.17-1.el7.x86_64.rpm
+	rpm -i mongodb-org-server-3.6.17-1.el7.x86_64.rpm
+	rpm -i mongodb-org-shell-3.6.17-1.el7.x86_64.rpm
+	PATH=$PATH:/usr/bin; export PATH
 
 	#disable selinux
 	sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/sysconfig/selinux
@@ -34,14 +27,17 @@ EOF
 
 	#configure
 	sed -i 's/\(bindIp\)/#\1/' /etc/mongod.conf
+	
 }
 
-
+yum install wget -y
+echo "Downloading the ssl cert"
+wget $certUri -O /etc/MongoAuthCert.pem
 install_mongo3
 
 
 #start mongod
-mongod --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/mongod.log --fork
+mongod --dbpath /var/lib/mongo/ --bind_ip 0.0.0.0 --logpath /var/log/mongodb/mongod.log --fork
 
 sleep 30
 n=`ps -ef |grep "mongod --dbpath /var/lib/mongo/"|grep -v grep | wc -l`
@@ -89,8 +85,7 @@ else
 fi
 
 #restart mongod with auth and config replica set
-mongod --configsvr --replSet crepset --port 27019 --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/config.log --fork --config /etc/mongod.conf
-
+mongod --configsvr --replSet crepset --bind_ip 0.0.0.0 --port 27019 --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/config.log --fork --config /etc/mongod.conf --keyFile /etc/mongokeyfile --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 
 
 #initiate config replica set
@@ -103,7 +98,7 @@ do
         echo "mongo config replica set started successfully"
         break
     else
-        mongod --configsvr --replSet crepset --port 27019 --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/config.log --fork --config /etc/mongod.conf
+        mongod --configsvr --replSet crepset --bind_ip 0.0.0.0 --port 27019 --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/config.log --fork --config /etc/mongod.conf --keyFile /etc/mongokeyfile --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
         continue
     fi
 done
@@ -114,7 +109,7 @@ if [[ $n -ne 1 ]];then
 fi
 
 
-mongo --port 27019 <<EOF
+mongo --port 27019 --ssl --sslCAFile /etc/MongoAuthCert.pem --sslAllowInvalidHostnames<<EOF
 use admin
 db.auth("$mongoAdminUser","$mongoAdminPasswd")
 config={_id: "crepset", configsvr: true, members: [{ _id: 0, host: "10.0.0.240:27019" },{ _id: 1, host: "10.0.0.241:27019" },{ _id: 2, host: "10.0.0.242:27019" }]}
@@ -142,7 +137,7 @@ if [[ ! -d /var/run/mongodb ]];then
 mkdir /var/run/mongodb
 chown -R mongod:mongod /var/run/mongodb
 fi
-mongod --configsvr --replSet crepset --port 27019 --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/config.log --fork --config /etc/mongod.conf
+mongod --configsvr --replSet crepset --bind_ip 0.0.0.0 --port 27019 --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/config.log --fork --config /etc/mongod.conf --keyFile /etc/mongokeyfile --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 }
 stop() {
 pkill mongod

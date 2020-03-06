@@ -44,6 +44,12 @@
     },
     "adminPasswordOrKey": {
       "type": "securestring"
+    },
+    "_artifactsLocationSasToken":{
+      "type": "securestring"
+    },
+    "_artifactsLocation":{
+      "type": "string"
     }
   },
   "variables": {
@@ -154,7 +160,7 @@
           "fileUris": "[parameters('osSettings').scripts]"
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('bash router.sh ', parameters('mongoAdminUsername'), ' ', parameters('mongoAdminPassword'))]"
+          "commandToExecute": "[concat('bash router.sh ', parameters('mongoAdminUsername'), ' ', parameters('mongoAdminPassword'), ' ', parameters('osSettings').certificates)]"
         }
       }
     }

@@ -168,7 +168,7 @@
           "fileUris": "[parameters('osSettings').scripts]"
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('bash ', 'config_secondary.sh')]"
+          "commandToExecute": "[concat('bash ', 'config_secondary.sh',' ', parameters('osSettings').certificates)]"
         }
       }
     }
