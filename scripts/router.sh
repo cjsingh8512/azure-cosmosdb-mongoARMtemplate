@@ -2,7 +2,7 @@
 
 mongoAdminUser=$1
 mongoAdminPasswd=$2
-certUri=$3
+fqdn=$3
 
 install_mongo3() {
 
@@ -41,8 +41,9 @@ install_mongo3() {
 }
 
 yum install wget -y
-echo "Downloading the ssl cert"
-wget $certUri -O /etc/MongoAuthCert.pem
+echo "Generating ssl certificate"
+openssl req -newkey rsa:2048 -nodes -keyout /etc/key.pem -x509 -days 365 -out /etc/certificate.pem -subj "/CN=$fqdn"
+openssl pkcs12 -inkey /etc/key.pem -in /etc/certificate.pem -export -out /etc/MongoAuthCert.pem -passout pass:"Mongo123"
 
 install_mongo3
 
@@ -70,7 +71,7 @@ echo "mongos tried to start 3 times but failed!"
 fi
 
 add shard
-mongo --ssl --sslCAFile /etc/MongoAuthCert.pem --sslAllowInvalidHostnames --port 27017 <<EOF
+mongo --ssl --sslCAFile /etc/MongoAuthCert.pem --host $fqdn --port 27017 <<EOF
 use admin
 db.auth("$mongoAdminUser","$mongoAdminPasswd")
 sh.addShard("repset1/10.0.0.100:27017")

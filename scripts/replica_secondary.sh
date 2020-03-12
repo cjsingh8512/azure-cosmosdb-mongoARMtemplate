@@ -66,7 +66,7 @@ install_mongo3
 disk_format
 
 #start replica set
-mongod --dbpath /var/lib/mongo/ --config /etc/mongod.conf --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
+mongod --shardsvr --dbpath /var/lib/mongo/ --config /etc/mongod.conf --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 
 
 #check if mongod started or not
@@ -92,7 +92,7 @@ if [[ ! -d /var/run/mongodb ]];then
 mkdir /var/run/mongodb
 chown -R mongod:mongod /var/run/mongodb
 fi
-mongod --dbpath /var/lib/mongo/ --config /etc/mongod.conf --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
+mongod --shardsvr --dbpath /var/lib/mongo/ --config /etc/mongod.conf --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 }
 stop() {
 pkill mongod

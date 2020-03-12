@@ -70,7 +70,7 @@ install_mongo3
 disk_format
 
 #start mongod
-mongod --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
+mongod --shardsvr --dbpath /var/lib/mongo/ --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 
 sleep 30
 n=`ps -ef |grep "mongod --dbpath /var/lib/mongo/" |grep -v grep |wc -l`
@@ -100,14 +100,6 @@ kill -2 $MongoPid
 
 
 
-# #set keyfile
-# echo "vfr4CDE1" > /etc/mongokeyfile
-# chown mongod:mongod /etc/mongokeyfile
-# chmod 600 /etc/mongokeyfile
-# sed -i 's/^#security/security/' /etc/mongod.conf
-# sed -i '/^security/akeyFile: /etc/mongokeyfile' /etc/mongod.conf
-# sed -i 's/^keyFile/  keyFile/' /etc/mongod.conf
-
 sleep 15
 MongoPid1=`ps -ef |grep "mongod --dbpath /var/lib/mongo/" |grep -v grep |awk '{print $2}'`
 if [[ -z $MongoPid1 ]];then
@@ -119,7 +111,7 @@ else
 fi
 
 #restart mongod with auth and replica set
-mongod --dbpath /var/lib/mongo/ --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --config /etc/mongod.conf --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
+mongod --dbpath /var/lib/mongo/ --shardsvr --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --config /etc/mongod.conf --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 
 
 #initiate replica set
@@ -131,7 +123,7 @@ do
 		echo "mongo replica set started successfully"
 		break
 	else
-		mongod --dbpath /var/lib/mongo/ --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --config /etc/mongod.conf --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
+		mongod --dbpath /var/lib/mongo/ --shardsvr --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --config /etc/mongod.conf --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 		continue
 	fi
 done
@@ -191,7 +183,7 @@ if [[ ! -d /var/run/mongodb ]];then
 mkdir /var/run/mongodb
 chown -R mongod:mongod /var/run/mongodb
 fi
-mongod --dbpath /var/lib/mongo/ --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --config /etc/mongod.conf --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
+mongod --dbpath /var/lib/mongo/ --shardsvr --replSet $replSetName --logpath /var/log/mongodb/mongod.log --bind_ip 0.0.0.0 --fork --config /etc/mongod.conf --sslMode requireSSL --sslPEMKeyFile /etc/MongoAuthCert.pem --sslPEMKeyPassword Mongo123
 }
 stop() {
 pkill mongod
