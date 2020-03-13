@@ -21,10 +21,10 @@ The nodes are under the same subnet 10.0.0.0/24. Except the router server, the o
 
 <img src="https://raw.githubusercontent.com/cjsingh8512/azure-cosmosdb-mongoARMtemplate/master/images/Mongo Sharded Cluster.png" />
 
-##Important Notice
+## Important Notice
 Each VM of the shard uses raid0 to improve performance. The number and the size of data disks(setup raid0) on each shard VM are determined by yourself. However, there is number and size of data disks limit per the VM size. Before you set number and size of data disks, please refer to the link https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-linux-sizes/ for the correct choice.
 
-##After deployment, you can do below to verify if the sharding cluster really works or not:
+## After deployment, you can do below to verify if the sharding cluster really works or not:
 
 1. SSH connect to the router server, execute below:
   ```
@@ -61,7 +61,7 @@ Each VM of the shard uses raid0 to improve performance. The number and the size 
 
   Before adding your own replica set into the sharding cluster, you should enable internal authentication in your replica set first, and make sure the replica set is accessiable through this sharding cluster.
 
-##Known Limitations
+## Known Limitations
 - The MongoDB version is 3.6.
 - We expose 1 router server on public address so that you can access MongoDB service through internet directly.
 - This cluster only has 1 shard, you can add more shards after the deployment. 
