@@ -1,19 +1,10 @@
 # Install MongoDB Sharding Cluster
 
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/mongodb-sharding-centos/PublicLastTestDate.svg" />&nbsp;
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/mongodb-sharding-centos/PublicDeployment.svg" />&nbsp;
-
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/mongodb-sharding-centos/FairfaxLastTestDate.svg" />&nbsp;
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/mongodb-sharding-centos/FairfaxDeployment.svg" />&nbsp;
-
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/mongodb-sharding-centos/BestPracticeResult.svg" />&nbsp;
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/mongodb-sharding-centos/CredScanResult.svg" />&nbsp;
-
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fmongodb-sharding-centos%2Fazuredeploy.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fcjsingh8512%2Fazure-cosmosdb-mongoARMtemplate%2Fmaster%2Fazuredeploy.json" target="_blank">
     <img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.png"/>
 </a>
 <a href="
-http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fmongodb-sharding-centos%2Fazuredeploy.json" target="_blank">
+http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fcjsingh8512%2Fazure-cosmosdb-mongoARMtemplate%2Fmaster%2Fazuredeploy.json" target="_blank">
     <img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.png"/>
 </a>
 
@@ -28,6 +19,7 @@ The config server replica set stores sharding cluster metadata. MongoDB suggests
 
 The nodes are under the same subnet 10.0.0.0/24. Except the router server, the other nodes only have private IP address.
 
+<img src="https://raw.githubusercontent.com/cjsingh8512/azure-cosmosdb-mongoARMtemplate/master/images/Mongo Sharded Cluster.png" />
 
 ##Important Notice
 Each VM of the shard uses raid0 to improve performance. The number and the size of data disks(setup raid0) on each shard VM are determined by yourself. However, there is number and size of data disks limit per the VM size. Before you set number and size of data disks, please refer to the link https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-linux-sizes/ for the correct choice.
